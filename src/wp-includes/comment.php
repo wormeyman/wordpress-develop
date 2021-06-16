@@ -386,7 +386,6 @@ function get_comment_count( $post_id = 0 ) {
 	$where = '';
 	if ( $post_id > 0 ) {
 		$where = $wpdb->prepare( 'WHERE comment_post_ID = %d', $post_id );
-	}
 
 	$totals = (array) $wpdb->get_results(
 		"
@@ -434,6 +433,22 @@ function get_comment_count( $post_id = 0 ) {
 				break;
 		}
 	}
+	} else {
+		$comment_count = array(
+			'approved'            => 0,
+			'awaiting_moderation' => $wpdb->get_var("SELECT COUNT( * ) FROM {$wpdb->comments} WHERE comment_approved = '0' "),
+			'spam'                => $spam = $wpdb->get_var("SELECT COUNT( * ) FROM {$wpdb->comments} WHERE comment_approved = 'spam' "),
+			'trash'               => $wpdb->get_var("SELECT COUNT( * ) FROM {$wpdb->comments} WHERE comment_approved = 'trash' "),
+			'post-trashed'        => $wpdb->get_var("SELECT COUNT( * ) FROM {$wpdb->comments} WHERE comment_approved = 'post-trashed' "),
+			'all'                 => 0,
+		);
+
+		$comment_count['total_comments'] = $wpdb->get_var("SELECT COUNT( * ) FROM {$wpdb->comments} ");
+		$comment_count['all'] = $comment_count['total_comments'];
+		$comment_count['approved'] = $comment_count['total_comments'] - $comment_count['spam'] - $comment_count['post-trashed'] - $comment_count['trash'] - $comment_count['awaiting_moderation'];
+			 }
+
+			 return $comment_count;
 
 	return array_map( 'intval', $comment_count );
 }
